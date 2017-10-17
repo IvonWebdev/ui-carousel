@@ -18,6 +18,64 @@
 })(angular);
 'use strict';
 
+angular.module('ui.carousel.directives').directive('uiCarousel', ['$compile', '$templateCache', '$sce', function ($compile, $templateCache, $sce) {
+
+  return { restrict: 'AE',
+    bindToController: true,
+    scope: {
+      name: '=?',
+      slides: '=',
+      show: '=?slidesToShow',
+      scroll: '=?slidesToScroll',
+      classes: '@',
+      fade: '=?',
+      onChange: '=?',
+      disableArrow: '=?',
+      autoplay: '=?',
+      autoplaySpeed: '=?',
+      cssEase: '=?',
+      speed: '=?',
+      infinite: '=?',
+      arrows: '=?',
+      dots: '=?',
+      initialSlide: '=?',
+      visibleNext: '=?',
+      visiblePrev: '=?',
+
+      // Method
+      onBeforeChange: '&',
+      onAfterChange: '&',
+      onInit: '&'
+    },
+    link: function link($scope, el) {
+      var template = angular.element($templateCache.get('ui-carousel/carousel.template.html'));
+
+      // dynamic injections to override the inner layers' components
+      var injectComponentMap = {
+        'carousel-item': '.carousel-item',
+        'carousel-prev': '.carousel-prev',
+        'carousel-next': '.carousel-next'
+      };
+
+      var templateInstance = template.clone();
+      angular.forEach(injectComponentMap, function (innerSelector, outerSelector) {
+        var outerElement = el[0].querySelector(outerSelector);
+        if (outerElement) {
+          angular.element(templateInstance[0].querySelector(innerSelector)).html(outerElement.innerHTML);
+        }
+      });
+
+      var compiledElement = $compile(templateInstance)($scope);
+      el.addClass('ui-carousel').html('').append(compiledElement);
+    },
+
+
+    controller: 'CarouselController',
+    controllerAs: 'ctrl'
+  };
+}]);
+'use strict';
+
 /**
  * angular-ui-carousel
  * for example:
@@ -262,16 +320,16 @@ angular.module('ui.carousel.controllers').controller('CarouselController', ['$sc
     }
 
     // TODO Prevent when track is moving
-    // if (_this.isTrackMoving) {
-    //   return $q.reject('Track is moving');
-    // }
+    if (_this.isTrackMoving) {
+      return $q.reject('Track is moving');
+    }
 
     var len = _this.slides.length;
     var show = _this.options.slidesToShow;
 
     if (len <= show) {
       _this.correctTrack();
-      // return $q.reject('Length of slides smaller than slides to show');
+      return $q.reject('Length of slides smaller than slides to show');
     }
 
     // We need target to destination
@@ -390,26 +448,24 @@ angular.module('ui.carousel.controllers').controller('CarouselController', ['$sc
    */
   this.correctTrack = function () {
     if (_this.options.infinite) {
-      (function () {
-        var left = 0;
-        if (_this.slides.length > _this.options.slidesToShow) {
-          left = -1 * (_this.currentSlide + _this.options.slidesToShow) * _this.itemWidth;
-        }
+      var left = 0;
+      if (_this.slides.length > _this.options.slidesToShow) {
+        left = -1 * (_this.currentSlide + _this.options.slidesToShow) * _this.itemWidth;
+      }
 
-        // Move without anim
-        _this.trackStyle[_this.transitionType] = _this.transformType + ' ' + 0 + 'ms ' + _this.options.cssEase;
+      // Move without anim
+      _this.trackStyle[_this.transitionType] = _this.transformType + ' ' + 0 + 'ms ' + _this.options.cssEase;
 
-        _this.isTrackMoving = true;
+      _this.isTrackMoving = true;
+      $timeout(function () {
+        _this.trackStyle[_this.animType] = 'translate3d(' + left + 'px, 0, 0px)';
+
+        // Revert animation
         $timeout(function () {
-          _this.trackStyle[_this.animType] = 'translate3d(' + left + 'px, 0, 0px)';
-
-          // Revert animation
-          $timeout(function () {
-            _this.refreshTrackStyle();
-            _this.isTrackMoving = false;
-          }, 200);
-        });
-      })();
+          _this.refreshTrackStyle();
+          _this.isTrackMoving = false;
+        }, 200);
+      });
     }
   };
 
@@ -586,9 +642,6 @@ angular.module('ui.carousel.controllers').controller('CarouselController', ['$sc
     }
 
     // Init carousel
-    if(_this.currentSlide < 0) {
-        _this.currentSlide = 0;
-    }
     if (_this.currentSlide > slides.length - 1) {
       _this.currentSlide = slides.length - 1;
     }
@@ -620,64 +673,6 @@ angular.module('ui.carousel.controllers').controller('CarouselController', ['$sc
   if (angular.version.major === 1 && angular.version.minor < 5) {
     this.$onInit();
   }
-}]);
-'use strict';
-
-angular.module('ui.carousel.directives').directive('uiCarousel', ['$compile', '$templateCache', '$sce', function ($compile, $templateCache, $sce) {
-
-  return { restrict: 'AE',
-    bindToController: true,
-    scope: {
-      name: '=?',
-      slides: '=',
-      show: '=?slidesToShow',
-      scroll: '=?slidesToScroll',
-      classes: '@',
-      fade: '=?',
-      onChange: '=?',
-      disableArrow: '=?',
-      autoplay: '=?',
-      autoplaySpeed: '=?',
-      cssEase: '=?',
-      speed: '=?',
-      infinite: '=?',
-      arrows: '=?',
-      dots: '=?',
-      initialSlide: '=?',
-      visibleNext: '=?',
-      visiblePrev: '=?',
-
-      // Method
-      onBeforeChange: '&',
-      onAfterChange: '&',
-      onInit: '&'
-    },
-    link: function link($scope, el) {
-      var template = angular.element($templateCache.get('ui-carousel/carousel.template.html'));
-
-      // dynamic injections to override the inner layers' components
-      var injectComponentMap = {
-        'carousel-item': '.carousel-item',
-        'carousel-prev': '.carousel-prev',
-        'carousel-next': '.carousel-next'
-      };
-
-      var templateInstance = template.clone();
-      angular.forEach(injectComponentMap, function (innerSelector, outerSelector) {
-        var outerElement = el[0].querySelector(outerSelector);
-        if (outerElement) {
-          angular.element(templateInstance[0].querySelector(innerSelector)).html(outerElement.innerHTML);
-        }
-      });
-
-      var compiledElement = $compile(templateInstance)($scope);
-      el.addClass('ui-carousel').html('').append(compiledElement);
-    },
-
-
-    controller: 'CarouselController',
-    controllerAs: 'ctrl'
-  };
 }]);
 'use strict';
 
