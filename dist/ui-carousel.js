@@ -262,16 +262,16 @@ angular.module('ui.carousel.controllers').controller('CarouselController', ['$sc
     }
 
     // TODO Prevent when track is moving
-    if (_this.isTrackMoving) {
-      return $q.reject('Track is moving');
-    }
+    // if (_this.isTrackMoving) {
+    //   return $q.reject('Track is moving');
+    // }
 
     var len = _this.slides.length;
     var show = _this.options.slidesToShow;
 
     if (len <= show) {
       _this.correctTrack();
-      return $q.reject('Length of slides smaller than slides to show');
+      // return $q.reject('Length of slides smaller than slides to show');
     }
 
     // We need target to destination
@@ -586,6 +586,9 @@ angular.module('ui.carousel.controllers').controller('CarouselController', ['$sc
     }
 
     // Init carousel
+    if(_this.currentSlide < 0) {
+        _this.currentSlide = 0;
+    }
     if (_this.currentSlide > slides.length - 1) {
       _this.currentSlide = slides.length - 1;
     }
